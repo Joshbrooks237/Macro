@@ -22,3 +22,14 @@ export type PriceResult = {
   /** Finnhub previous close; undefined for crypto simple price fetch */
   previousClose?: number;
 };
+
+/** Batch ticker / API payload row */
+export type QuoteRow =
+  | {
+      asset: AssetKey;
+      label: string;
+      ok: true;
+      price: number;
+      sessionPct: number | null;
+    }
+  | { asset: AssetKey; label: string; ok: false; error: string };

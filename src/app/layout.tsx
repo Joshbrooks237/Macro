@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import "./critical.css";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,9 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`h-full ${inter.variable} ${jetbrains.variable}`}
+    >
       <body
-        className={`${inter.variable} ${jetbrains.variable} min-h-screen font-sans antialiased`}
+        className="min-h-full bg-macro-bg bg-macro-radial font-sans text-macro-ink antialiased"
+        style={{
+          backgroundColor: "#0c0f14",
+          color: "#e8eaed",
+        }}
       >
         {children}
       </body>

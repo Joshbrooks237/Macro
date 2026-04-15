@@ -49,11 +49,11 @@ export function PredictionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl bg-[var(--card)] p-6 ring-1 ring-[var(--border)]"
+      className="space-y-4 rounded-2xl bg-macro-surface p-6 ring-1 ring-macro-border"
     >
       <div>
         <h2 className="text-lg font-semibold text-white">New prediction</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <p className="mt-1 text-sm text-macro-muted">
           Not trading advice — a structured log so you can compare your thesis
           to what the market actually did.
         </p>
@@ -63,9 +63,9 @@ export function PredictionForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm">
-          <span className="text-[var(--muted)]">Asset</span>
+          <span className="text-macro-muted">Asset</span>
           <select
-            className="mt-1 w-full rounded-lg border border-[var(--border)] bg-black/30 px-3 py-2 text-white outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            className="mt-1 w-full rounded-lg border border-macro-border bg-black/30 px-3 py-2 text-white outline-none focus:ring-2 focus:ring-macro-accent"
             value={asset}
             onChange={(e) => setAsset(e.target.value as Asset)}
           >
@@ -77,9 +77,9 @@ export function PredictionForm({
         </label>
 
         <label className="block text-sm">
-          <span className="text-[var(--muted)]">Direction</span>
+          <span className="text-macro-muted">Direction</span>
           <select
-            className="mt-1 w-full rounded-lg border border-[var(--border)] bg-black/30 px-3 py-2 text-white outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            className="mt-1 w-full rounded-lg border border-macro-border bg-black/30 px-3 py-2 text-white outline-none focus:ring-2 focus:ring-macro-accent"
             value={direction}
             onChange={(e) => setDirection(e.target.value as "up" | "down")}
           >
@@ -89,19 +89,19 @@ export function PredictionForm({
         </label>
 
         <label className="block text-sm sm:col-span-2">
-          <span className="text-[var(--muted)]">Horizon</span>
+          <span className="text-macro-muted">Horizon</span>
           <div className="mt-2 flex flex-wrap gap-3">
             {([24, 48] as const).map((h) => (
               <label
                 key={h}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] bg-black/20 px-3 py-2 text-sm text-white has-[:checked]:border-[var(--accent)] has-[:checked]:bg-blue-950/40"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-macro-border bg-black/20 px-3 py-2 text-sm text-white has-[:checked]:border-macro-accent has-[:checked]:bg-blue-950/40"
               >
                 <input
                   type="radio"
                   name="horizon"
                   checked={horizon === h}
                   onChange={() => setHorizon(h)}
-                  className="accent-[var(--accent)]"
+                  className="accent-macro-accent"
                 />
                 {h} hours
               </label>
@@ -110,9 +110,9 @@ export function PredictionForm({
         </label>
 
         <label className="block text-sm sm:col-span-2">
-          <span className="text-[var(--muted)]">Note (optional)</span>
+          <span className="text-macro-muted">Note (optional)</span>
           <textarea
-            className="mt-1 min-h-[88px] w-full rounded-lg border border-[var(--border)] bg-black/30 px-3 py-2 text-white outline-none placeholder:text-slate-600 focus:ring-2 focus:ring-[var(--accent)]"
+            className="mt-1 min-h-[88px] w-full rounded-lg border border-macro-border bg-black/30 px-3 py-2 text-white outline-none placeholder:text-slate-600 focus:ring-2 focus:ring-macro-accent"
             placeholder="Why you think the move happens (Fed, oil inventories, risk-on, etc.)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -130,7 +130,7 @@ export function PredictionForm({
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/30 transition hover:bg-blue-500 disabled:opacity-50 sm:w-auto"
+        className="w-full rounded-lg bg-macro-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/30 transition hover:bg-blue-500 disabled:opacity-50 sm:w-auto"
       >
         {submitting ? "Saving…" : "Log prediction"}
       </button>

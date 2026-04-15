@@ -94,7 +94,7 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-[var(--card)] p-8 text-center text-[var(--muted)] ring-1 ring-[var(--border)]">
+      <div className="rounded-2xl bg-macro-surface p-8 text-center text-macro-muted ring-1 ring-macro-border">
         Loading predictions…
       </div>
     );
@@ -108,17 +108,17 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
           type="button"
           onClick={resolveDue}
           disabled={resolving}
-          className="rounded-lg border border-[var(--border)] bg-black/30 px-4 py-2 text-sm font-medium text-white hover:bg-black/50 disabled:opacity-50"
+          className="rounded-lg border border-macro-border bg-black/30 px-4 py-2 text-sm font-medium text-white hover:bg-black/50 disabled:opacity-50"
         >
           {resolving ? "Resolving…" : "Resolve due predictions"}
         </button>
       </div>
       {resolveMsg ? (
-        <p className="text-sm text-[var(--muted)]">{resolveMsg}</p>
+        <p className="text-sm text-macro-muted">{resolveMsg}</p>
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="rounded-2xl bg-[var(--card)] p-8 text-center text-[var(--muted)] ring-1 ring-[var(--border)]">
+        <p className="rounded-2xl bg-macro-surface p-8 text-center text-macro-muted ring-1 ring-macro-border">
           No predictions yet. Log one to start building your track record.
         </p>
       ) : (
@@ -126,23 +126,23 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
           {rows.map((p) => (
             <li
               key={p.id}
-              className="rounded-xl bg-[var(--card)] p-4 ring-1 ring-[var(--border)]"
+              className="rounded-xl bg-macro-surface p-4 ring-1 ring-macro-border"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-medium text-white">
                   {assetLabels[p.asset] ?? p.asset}
                 </span>
-                <span className="text-[var(--muted)]">·</span>
+                <span className="text-macro-muted">·</span>
                 <span className="text-slate-200">
                   {p.direction === "up" ? "↑ Up" : "↓ Down"}
                 </span>
-                <span className="text-[var(--muted)]">·</span>
-                <span className="text-sm text-[var(--muted)]">
+                <span className="text-macro-muted">·</span>
+                <span className="text-sm text-macro-muted">
                   {p.horizon_hours}h
                 </span>
                 <span className={outcomeBadge(p.outcome)}>{p.outcome}</span>
               </div>
-              <div className="mt-2 grid gap-1 text-sm text-[var(--muted)] sm:grid-cols-2">
+              <div className="mt-2 grid gap-1 text-sm text-macro-muted sm:grid-cols-2">
                 <span>
                   Entry:{" "}
                   <span className="tabular-nums text-slate-200">
@@ -171,7 +171,7 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
                 )}
               </div>
               {p.note ? (
-                <p className="mt-2 border-t border-[var(--border)] pt-2 text-sm text-slate-300">
+                <p className="mt-2 border-t border-macro-border pt-2 text-sm text-slate-300">
                   {p.note}
                 </p>
               ) : null}

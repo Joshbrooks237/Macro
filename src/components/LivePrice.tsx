@@ -41,7 +41,7 @@ export function LivePrice({ asset }: { asset: Asset }) {
 
   if (loading) {
     return (
-      <p className="text-sm text-[var(--muted)]">Loading live price…</p>
+      <p className="text-sm text-macro-muted">Loading live price…</p>
     );
   }
   if (error) {
@@ -61,12 +61,12 @@ export function LivePrice({ asset }: { asset: Asset }) {
       : null;
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-black/20 px-3 py-2 text-sm">
+    <div className="rounded-lg border border-macro-border bg-black/20 px-3 py-2 text-sm">
       <span className="font-medium text-white">{data.label}</span>
-      <span className="mx-2 text-[var(--muted)]">·</span>
+      <span className="mx-2 text-macro-muted">·</span>
       <span className="tabular-nums text-emerald-200">{fmt.format(data.price)}</span>
       {session ? (
-        <span className="ml-2 text-xs text-[var(--muted)]">({session})</span>
+        <span className="ml-2 text-xs text-macro-muted">({session})</span>
       ) : null}
     </div>
   );

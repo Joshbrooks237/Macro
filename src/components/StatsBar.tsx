@@ -51,7 +51,7 @@ export function StatsBar() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="h-24 animate-pulse rounded-xl bg-[var(--card)] ring-1 ring-[var(--border)]"
+            className="h-24 animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border"
           />
         ))}
       </div>
@@ -89,15 +89,15 @@ function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl bg-[var(--card)] px-4 py-3 ring-1 ring-[var(--border)]">
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">
+    <div className="rounded-xl bg-macro-surface px-4 py-3 ring-1 ring-macro-border">
+      <p className="text-xs font-medium uppercase tracking-wide text-macro-muted">
         {label}
       </p>
       <p className="mt-1 text-2xl font-semibold tabular-nums text-white">
         {value}
       </p>
       {hint ? (
-        <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p>
+        <p className="mt-1 text-xs text-macro-muted">{hint}</p>
       ) : null}
     </div>
   );
