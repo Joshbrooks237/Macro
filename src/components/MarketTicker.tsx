@@ -1,6 +1,7 @@
 "use client";
 
 import { MarketChartModal } from "@/components/MarketChartModal";
+import { MarketCompareModal } from "@/components/MarketCompareModal";
 import { assetCardClasses } from "@/lib/assetTheme";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey, QuoteRow } from "@/types/prediction";
@@ -107,6 +108,7 @@ function QuoteCard({
 
 export function MarketTicker() {
   const [chartAsset, setChartAsset] = useState<AssetKey | null>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [quotes, setQuotes] = useState<QuoteRow[] | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -166,15 +168,28 @@ export function MarketTicker() {
         asset={chartAsset}
         onClose={() => setChartAsset(null)}
       />
-      <div className="flex items-center justify-between gap-2 px-1 pb-3 lg:px-0">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
-            Live markets
-          </span>
+      <MarketCompareModal
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+      />
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 px-1 pb-3 lg:px-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-400">
+              Live markets
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCompareOpen(true)}
+            className="rounded-lg border border-macro-border bg-black/25 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:bg-black/40 hover:text-white"
+          >
+            Compare overlay
+          </button>
         </div>
         <span className="font-mono text-[10px] text-macro-muted">
           {timeLabel}

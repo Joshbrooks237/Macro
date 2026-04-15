@@ -3,7 +3,7 @@
 import { assetCardClasses, assetChartColors } from "@/lib/assetTheme";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Area,
@@ -51,6 +51,7 @@ export function MarketChartModal({
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const gradientId = useId().replace(/:/g, "");
+  const loadSeq = useRef(0);
 
   const subtitle = useMemo(() => {
     if (!asset) return "";
@@ -72,19 +73,21 @@ export function MarketChartModal({
 
   const load = useCallback(async () => {
     if (!asset) return;
+    const seq = ++loadSeq.current;
     setLoading(true);
     setErr(null);
-    setData(null);
     try {
       const json = await fetchJson<HistoryPayload>(
         `/api/history?asset=${encodeURIComponent(asset)}&days=7`,
         { cache: "no-store" },
       );
+      if (seq !== loadSeq.current || json.asset !== asset) return;
       setData(json);
     } catch (e) {
+      if (seq !== loadSeq.current) return;
       setErr(e instanceof Error ? e.message : "Chart failed");
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [asset]);
 
@@ -101,20 +104,32 @@ export function MarketChartModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [asset, onClose]);
 
+  const chartData = useMemo(() => {
+    if (!asset || !data || data.asset !== asset) return [];
+    return data.points.map((p) => ({
+      name: p.label,
+      price: p.price,
+    }));
+  }, [data, asset]);
+
+  const showChart = chartData.length > 0;
+  const chartStale = Boolean(
+    asset && loading && data && data.asset === asset && showChart,
+  );
+  const awaitingFirstPaint = Boolean(
+    asset &&
+      loading &&
+      (!data || data.asset !== asset || !showChart),
+  );
+
   if (!asset || !mounted) return null;
 
   const modalTheme = assetCardClasses[asset];
   const chartColors = assetChartColors[asset];
 
-  const chartData =
-    data?.points.map((p) => ({
-      name: p.label,
-      price: p.price,
-    })) ?? [];
-
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm sm:p-6"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4 sm:p-6"
       role="presentation"
       onClick={onClose}
     >
@@ -131,10 +146,12 @@ export function MarketChartModal({
               id="chart-title"
               className="text-base font-semibold text-white sm:text-lg"
             >
-              {data?.title ?? "Loading…"}
+              {data?.asset === asset ? data.title : "Loading…"}
             </h2>
             <p className="mt-0.5 text-xs text-macro-muted">
-              Last {data?.days ?? 7} days · click outside or Esc to close
+              Last{" "}
+              {data?.asset === asset ? data.days : 7} days · click outside or
+              Esc to close
             </p>
             <p className="mt-1 text-xs italic text-slate-500">{subtitle}</p>
           </div>
@@ -148,7 +165,7 @@ export function MarketChartModal({
         </div>
 
         <div className="min-h-[280px] flex-1 px-2 py-4 sm:px-4">
-          {loading ? (
+          {awaitingFirstPaint && !err ? (
             <div className="flex h-[260px] items-center justify-center text-sm text-macro-muted">
               Drawing the squiggle…
             </div>
@@ -156,14 +173,26 @@ export function MarketChartModal({
             <div className="rounded-lg border border-amber-900/50 bg-amber-950/30 px-3 py-3 text-sm text-amber-100">
               {err}
             </div>
-          ) : chartData.length === 0 ? (
+          ) : !showChart ? (
             <div className="flex h-[260px] items-center justify-center text-center text-sm text-macro-muted">
               No daily candles returned — markets may be closed or data
               unavailable for this symbol.
             </div>
           ) : (
-            <div className="h-[300px] w-full sm:h-[320px]">
-              <ResponsiveContainer width="100%" height="100%">
+            <div
+              className={`relative isolate h-[300px] w-full sm:h-[320px] ${chartStale ? "opacity-80" : "opacity-100"}`}
+            >
+              {chartStale ? (
+                <div className="pointer-events-none absolute right-2 top-0 z-10 rounded-md bg-black/50 px-2 py-0.5 text-[10px] text-slate-300">
+                  Updating…
+                </div>
+              ) : null}
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                debounce={0}
+                initialDimension={{ width: 520, height: 308 }}
+              >
                 <AreaChart
                   data={chartData}
                   margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
@@ -223,10 +252,16 @@ export function MarketChartModal({
                     type="monotone"
                     dataKey="price"
                     stroke={chartColors.stroke}
-                    strokeWidth={2}
+                    strokeWidth={2.25}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     fill={`url(#${gradientId})`}
                     dot={false}
                     activeDot={{ r: 4, fill: chartColors.activeDot }}
+                    isAnimationActive
+                    animationBegin={120}
+                    animationDuration={1400}
+                    animationEasing="ease-in-out"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -234,7 +269,7 @@ export function MarketChartModal({
           )}
         </div>
 
-        {data?.source ? (
+        {data?.asset === asset && data?.source ? (
           <p className="border-t border-macro-border px-4 py-2 text-center text-[10px] text-macro-muted sm:px-5">
             Data:{" "}
             {data.source === "coingecko"

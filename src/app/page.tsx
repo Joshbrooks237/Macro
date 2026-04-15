@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { MarketTicker } from "@/components/MarketTicker";
+import { PolymarketGeopolitics } from "@/components/PolymarketGeopolitics";
+import { ZeroHedgeFeed } from "@/components/ZeroHedgeFeed";
 import { PredictionForm } from "@/components/PredictionForm";
 import { PredictionList } from "@/components/PredictionList";
 import { StatsBar } from "@/components/StatsBar";
@@ -31,6 +33,14 @@ export default function Home() {
 
           <section className="mb-10 space-y-4">
             <StatsBar />
+          </section>
+
+          <section className="mb-10">
+            <PolymarketGeopolitics />
+          </section>
+
+          <section className="mb-10">
+            <ZeroHedgeFeed />
           </section>
 
           <section className="mb-10">
