@@ -6,6 +6,14 @@ const COINGECKO_BTC =
 /** In-memory BTC quote to stay under CoinGecko public rate limits (ticker + tabs + dev). */
 let cryptoCache: { price: number; fetchedAt: number } | null = null;
 
+/** Gold uses Yahoo GC=F ($/oz); short cache to limit unofficial API calls. */
+let goldCache: { result: PriceResult; fetchedAt: number } | null = null;
+
+function goldCacheTtlMs(): number {
+  const sec = Number.parseInt(process.env.GOLD_YAHOO_CACHE_TTL_SEC ?? "45", 10);
+  return Number.isFinite(sec) && sec >= 15 ? sec * 1000 : 45_000;
+}
+
 function cryptoCacheTtlMs(): number {
   const sec = Number.parseInt(
     process.env.COINGECKO_CACHE_TTL_SEC ?? "90",
@@ -47,9 +55,52 @@ async function fetchBitcoinUsdFromCoingecko(
   return usd;
 }
 
-const SYMBOL_MAP: Record<Exclude<AssetKey, "crypto">, string> = {
+type YahooQuoteMeta = {
+  regularMarketPrice?: number;
+  chartPreviousClose?: number;
+  previousClose?: number;
+};
+
+/**
+ * COMEX gold front-month futures (GC=F) — USD per troy ounce, matches typical “gold price” headlines.
+ * Not the GLD ETF share price.
+ */
+async function fetchGoldSpotFromYahoo(
+  fetchInit: RequestInit,
+): Promise<PriceResult> {
+  const url =
+    "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=5d";
+  const res = await fetch(url, {
+    ...fetchInit,
+    headers: {
+      Accept: "application/json",
+      "User-Agent":
+        "Mozilla/5.0 (compatible; MacroPredictionLearningBot/1.0; educational)",
+      ...(fetchInit.headers as Record<string, string> | undefined),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Yahoo gold (GC=F) error: ${res.status} ${res.statusText}`);
+  }
+  const json = (await res.json()) as {
+    chart?: { result?: Array<{ meta?: YahooQuoteMeta }> };
+  };
+  const meta = json.chart?.result?.[0]?.meta;
+  const price = meta?.regularMarketPrice;
+  if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
+    throw new Error("Yahoo returned no valid gold futures price (GC=F)");
+  }
+  const pc = meta?.chartPreviousClose ?? meta?.previousClose;
+  return {
+    price,
+    previousClose:
+      typeof pc === "number" && Number.isFinite(pc) && pc > 0 ? pc : undefined,
+  };
+}
+
+const SYMBOL_MAP: Record<Exclude<AssetKey, "crypto" | "gold">, string> = {
   oil: "USO",
-  gold: "GLD",
+  silver: "SLV",
   stocks: "SPY",
 };
 
@@ -57,6 +108,7 @@ const SYMBOL_MAP: Record<Exclude<AssetKey, "crypto">, string> = {
 export const TRACKED_ASSETS: AssetKey[] = [
   "stocks",
   "gold",
+  "silver",
   "oil",
   "crypto",
 ];
@@ -81,7 +133,7 @@ function getFinnhubToken(): string {
 
 /**
  * Fetches current price (and previous close when from Finnhub).
- * Crypto uses CoinGecko; oil/gold/stocks use Finnhub quote.
+ * Crypto uses CoinGecko; ETFs/commodity proxies use Finnhub quote.
  * @param options.noCache — use for live tickers (bypasses Next fetch cache)
  */
 export async function getPrice(
@@ -106,6 +158,24 @@ export async function getPrice(
     } catch (e) {
       if (cryptoCache) {
         return { price: cryptoCache.price };
+      }
+      throw e;
+    }
+  }
+
+  if (asset === "gold") {
+    const ttl = goldCacheTtlMs();
+    const now = Date.now();
+    if (goldCache && now - goldCache.fetchedAt < ttl) {
+      return goldCache.result;
+    }
+    try {
+      const result = await fetchGoldSpotFromYahoo(fetchInit);
+      goldCache = { result, fetchedAt: Date.now() };
+      return result;
+    } catch (e) {
+      if (goldCache) {
+        return goldCache.result;
       }
       throw e;
     }
@@ -143,7 +213,8 @@ export function finnhubSessionPctChange(quote: PriceResult): number | null {
 export function assetLabel(asset: AssetKey): string {
   const labels: Record<AssetKey, string> = {
     oil: "Oil (USO)",
-    gold: "Gold (GLD)",
+    gold: "Gold (GC=F, $/oz)",
+    silver: "Silver (SLV)",
     stocks: "Stocks (SPY)",
     crypto: "Bitcoin",
   };

@@ -10,8 +10,8 @@ export default function Home() {
   const [listKey, setListKey] = useState(0);
 
   return (
-    <div className="flex min-h-screen flex-col-reverse lg:flex-row">
-      <main className="min-w-0 flex-1">
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      <main className="relative z-0 min-w-0 flex-1">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
           <header className="mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
@@ -21,10 +21,11 @@ export default function Home() {
               Learn from real outcomes
             </h1>
             <p className="mt-3 max-w-2xl text-macro-muted">
-              Log a directional view on oil, gold, broad stocks, or Bitcoin. The
-              app stores the entry price, waits for your horizon, then scores the
-              result using live CoinGecko and Finnhub data — with a neutral band
-              for tiny moves so noise doesn’t fake a win rate.
+              Log a directional view on oil, gold, silver, broad stocks, or
+              Bitcoin. The app stores the entry price, waits for your horizon,
+              then scores the result using live CoinGecko, Yahoo (gold), and
+              Finnhub data — with a neutral band for tiny moves so noise
+              doesn’t fake a win rate.
             </p>
           </header>
 
@@ -50,12 +51,12 @@ export default function Home() {
             <code className="rounded bg-black/40 px-1 py-0.5 font-mono text-slate-300">
               FINNHUB_API_KEY
             </code>{" "}
-            for SPY, GLD, and USO quotes.
+            for SPY, SLV, and USO quotes (gold uses COMEX GC=F via Yahoo).
           </footer>
         </div>
       </main>
 
-      <aside className="shrink-0 border-t border-macro-border bg-black/20 px-4 py-4 lg:sticky lg:top-0 lg:max-h-screen lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:px-5 lg:py-8 xl:w-[22rem]">
+      <aside className="relative z-10 shrink-0 border-t border-macro-border bg-macro-surface/70 px-4 py-4 backdrop-blur-md lg:sticky lg:top-0 lg:max-h-screen lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:px-5 lg:py-8 xl:w-[22rem]">
         <MarketTicker />
       </aside>
     </div>

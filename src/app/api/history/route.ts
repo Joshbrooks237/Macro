@@ -9,6 +9,7 @@ function parseAsset(v: string | null): AssetKey | null {
   if (
     v === "oil" ||
     v === "gold" ||
+    v === "silver" ||
     v === "stocks" ||
     v === "crypto"
   ) {
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
 
   if (!asset) {
     return NextResponse.json(
-      { error: "Query ?asset= oil|gold|stocks|crypto required" },
+      { error: "Query ?asset= oil|gold|silver|stocks|crypto required" },
       { status: 400 },
     );
   }

@@ -1,7 +1,9 @@
 "use client";
 
+import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Area,
   AreaChart,
@@ -43,13 +45,28 @@ export function MarketChartModal({
   asset: AssetKey | null;
   onClose: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<HistoryPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const gradientId = useId().replace(/:/g, "");
 
   const subtitle = useMemo(() => {
     if (!asset) return "";
     return FUN_SUBTITLES[Math.floor(Math.random() * FUN_SUBTITLES.length)];
+  }, [asset]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!asset) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [asset]);
 
   const load = useCallback(async () => {
@@ -58,13 +75,11 @@ export function MarketChartModal({
     setErr(null);
     setData(null);
     try {
-      const res = await fetch(
+      const json = await fetchJson<HistoryPayload>(
         `/api/history?asset=${encodeURIComponent(asset)}&days=7`,
         { cache: "no-store" },
       );
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Could not load history");
-      setData(json as HistoryPayload);
+      setData(json);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Chart failed");
     } finally {
@@ -85,7 +100,7 @@ export function MarketChartModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [asset, onClose]);
 
-  if (!asset) return null;
+  if (!asset || !mounted) return null;
 
   const chartData =
     data?.points.map((p) => ({
@@ -93,9 +108,9 @@ export function MarketChartModal({
       price: p.price,
     })) ?? [];
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm sm:p-6"
       role="presentation"
       onClick={onClose}
     >
@@ -103,7 +118,7 @@ export function MarketChartModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="chart-title"
-        className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-2xl border border-macro-border bg-macro-surface shadow-2xl sm:rounded-2xl"
+        className="relative flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-macro-border bg-macro-surface shadow-2xl ring-1 ring-white/10"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-macro-border px-4 py-3 sm:px-5">
@@ -115,14 +130,14 @@ export function MarketChartModal({
               {data?.title ?? "Loading…"}
             </h2>
             <p className="mt-0.5 text-xs text-macro-muted">
-              Last {data?.days ?? 7} days · tap outside or Esc to close
+              Last {data?.days ?? 7} days · click outside or Esc to close
             </p>
             <p className="mt-1 text-xs italic text-slate-500">{subtitle}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-macro-border bg-black/30 px-2.5 py-1 text-sm text-slate-300 hover:bg-black/50"
+            className="shrink-0 rounded-lg border border-macro-border bg-black/30 px-2.5 py-1 text-sm text-slate-300 hover:bg-black/50"
           >
             Close
           </button>
@@ -143,7 +158,7 @@ export function MarketChartModal({
               unavailable for this symbol.
             </div>
           ) : (
-            <div className="h-[280px] w-full">
+            <div className="h-[300px] w-full sm:h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={chartData}
@@ -151,7 +166,7 @@ export function MarketChartModal({
                 >
                   <defs>
                     <linearGradient
-                      id="macroChartFill"
+                      id={gradientId}
                       x1="0"
                       y1="0"
                       x2="0"
@@ -205,7 +220,7 @@ export function MarketChartModal({
                     dataKey="price"
                     stroke="#60a5fa"
                     strokeWidth={2}
-                    fill="url(#macroChartFill)"
+                    fill={`url(#${gradientId})`}
                     dot={false}
                     activeDot={{ r: 4, fill: "#93c5fd" }}
                   />
@@ -227,6 +242,7 @@ export function MarketChartModal({
           </p>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -8,7 +8,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const database = getDb();
+  let database;
+  try {
+    database = getDb();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Database unavailable";
+    return NextResponse.json({ error: message, resolved_count: 0, resolved: [], errors: [] }, { status: 500 });
+  }
+
   const now = new Date().toISOString();
   const threshold = getMoveThresholdPct();
 

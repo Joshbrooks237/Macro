@@ -12,11 +12,12 @@ export async function GET(request: Request) {
     !asset ||
     (asset !== "oil" &&
       asset !== "gold" &&
+      asset !== "silver" &&
       asset !== "stocks" &&
       asset !== "crypto")
   ) {
     return NextResponse.json(
-      { error: "Query ?asset= oil|gold|stocks|crypto required" },
+      { error: "Query ?asset= oil|gold|silver|stocks|crypto required" },
       { status: 400 },
     );
   }

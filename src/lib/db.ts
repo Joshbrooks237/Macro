@@ -7,6 +7,45 @@ const DB_PATH = path.join(DATA_DIR, "macro-predictions.db");
 
 let db: Database.Database | null = null;
 
+const ASSET_CHECK =
+  "('oil', 'gold', 'silver', 'stocks', 'crypto')";
+
+function ensurePredictionsAllowSilver(instance: Database.Database) {
+  const row = instance
+    .prepare(
+      `SELECT sql FROM sqlite_master WHERE type='table' AND name='predictions'`,
+    )
+    .get() as { sql: string } | undefined;
+
+  if (!row?.sql) return;
+  if (row.sql.includes("'silver'")) return;
+
+  instance.exec(`
+    BEGIN IMMEDIATE;
+    CREATE TABLE predictions_migrate (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT NOT NULL,
+      asset TEXT NOT NULL CHECK (asset IN ${ASSET_CHECK}),
+      direction TEXT NOT NULL CHECK (direction IN ('up', 'down')),
+      horizon_hours INTEGER NOT NULL CHECK (horizon_hours IN (24, 48)),
+      note TEXT,
+      entry_price REAL NOT NULL,
+      due_at TEXT NOT NULL,
+      resolved_at TEXT,
+      exit_price REAL,
+      pct_change REAL,
+      outcome TEXT NOT NULL DEFAULT 'pending'
+        CHECK (outcome IN ('pending', 'correct', 'incorrect', 'neutral'))
+    );
+    INSERT INTO predictions_migrate SELECT * FROM predictions;
+    DROP TABLE predictions;
+    ALTER TABLE predictions_migrate RENAME TO predictions;
+    CREATE INDEX IF NOT EXISTS idx_predictions_due ON predictions(due_at);
+    CREATE INDEX IF NOT EXISTS idx_predictions_outcome ON predictions(outcome);
+    COMMIT;
+  `);
+}
+
 export function getDb(): Database.Database {
   if (db) return db;
   if (!fs.existsSync(DATA_DIR)) {
@@ -18,7 +57,7 @@ export function getDb(): Database.Database {
     CREATE TABLE IF NOT EXISTS predictions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       created_at TEXT NOT NULL,
-      asset TEXT NOT NULL CHECK (asset IN ('oil', 'gold', 'stocks', 'crypto')),
+      asset TEXT NOT NULL CHECK (asset IN ${ASSET_CHECK}),
       direction TEXT NOT NULL CHECK (direction IN ('up', 'down')),
       horizon_hours INTEGER NOT NULL CHECK (horizon_hours IN (24, 48)),
       note TEXT,
@@ -33,6 +72,7 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_predictions_due ON predictions(due_at);
     CREATE INDEX IF NOT EXISTS idx_predictions_outcome ON predictions(outcome);
   `);
+  ensurePredictionsAllowSilver(instance);
   db = instance;
   return instance;
 }

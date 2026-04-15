@@ -30,7 +30,7 @@ export default function RootLayout({
       className={`h-full ${inter.variable} ${jetbrains.variable}`}
     >
       <body
-        className="min-h-full bg-macro-bg bg-macro-radial font-sans text-macro-ink antialiased"
+        className="min-h-full bg-macro-radial bg-fixed bg-no-repeat font-sans text-macro-ink antialiased selection:bg-blue-500/25 selection:text-white"
         style={{
           backgroundColor: "#0c0f14",
           color: "#e8eaed",

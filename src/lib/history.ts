@@ -4,8 +4,15 @@ import { assetLabel } from "@/lib/prices";
 const ETF_SYMBOL: Record<Exclude<AssetKey, "crypto">, string> = {
   oil: "USO",
   gold: "GLD",
+  silver: "SLV",
   stocks: "SPY",
 };
+
+/** Yahoo chart symbol: gold uses COMEX futures (≈ spot $/oz), not GLD. */
+function yahooHistorySymbol(asset: Exclude<AssetKey, "crypto">): string {
+  if (asset === "gold") return "GC=F";
+  return ETF_SYMBOL[asset];
+}
 
 export type HistoryPoint = {
   /** Unix ms */
@@ -49,6 +56,8 @@ async function tryFinnhubDaily(
 ): Promise<HistoryResponse | null> {
   const token = process.env.FINNHUB_API_KEY?.trim();
   if (!token) return null;
+  /** Gold is priced from Yahoo GC=F ($/oz); Finnhub GLD candles are a different instrument. */
+  if (asset === "gold") return null;
 
   const symbol = ETF_SYMBOL[asset];
   const to = Math.floor(Date.now() / 1000);
@@ -96,7 +105,7 @@ async function fetchYahooDaily(
   asset: Exclude<AssetKey, "crypto">,
   days: number,
 ): Promise<HistoryResponse> {
-  const symbol = ETF_SYMBOL[asset];
+  const symbol = yahooHistorySymbol(asset);
   const range =
     days <= 5 ? "5d" : days <= 10 ? "10d" : days <= 30 ? "1mo" : "3mo";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { MarketChartModal } from "@/components/MarketChartModal";
+import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey, QuoteRow } from "@/types/prediction";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -99,9 +100,10 @@ export function MarketTicker() {
 
   const tick = useCallback(async () => {
     try {
-      const res = await fetch("/api/prices", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Ticker fetch failed");
+      const data = await fetchJson<{ quotes: QuoteRow[]; fetched_at: string }>(
+        "/api/prices",
+        { cache: "no-store" },
+      );
 
       const rows = data.quotes as QuoteRow[];
       const nextFlash: Record<string, "up" | "down" | null> = {};
@@ -169,7 +171,7 @@ export function MarketTicker() {
       ) : null}
 
       {/* Mobile / tablet: compact strip */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:hidden">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 lg:hidden">
         {quotes?.map((row) => (
           <QuoteCard
             key={row.asset}
@@ -178,7 +180,7 @@ export function MarketTicker() {
             onOpenChart={setChartAsset}
           />
         )) ??
-          [1, 2, 3, 4].map((i) => (
+          [1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
               className="h-[88px] animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border"
@@ -196,7 +198,7 @@ export function MarketTicker() {
             onOpenChart={setChartAsset}
           />
         )) ??
-          [1, 2, 3, 4].map((i) => (
+          [1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
               className="h-[92px] animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border"
@@ -206,8 +208,8 @@ export function MarketTicker() {
 
       <p className="mt-4 hidden text-[10px] leading-relaxed text-macro-muted lg:block">
         Updates every ~{POLL_MS / 1000}s (BTC may reuse a server cache up to ~90s
-        to avoid CoinGecko limits). Session % is vs prior close (Finnhub);
-        Bitcoin has no session % here.
+        to avoid CoinGecko limits). Session % uses prior close from the same
+        feed (Finnhub for ETFs; Yahoo for gold GC=F; none for Bitcoin).
       </p>
     </div>
   );

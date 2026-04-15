@@ -11,3 +11,16 @@
   --accent: #3b82f6;
   --muted: #8b95a8;
 }
+
+@layer base {
+  /* Native controls stay on-theme when Tailwind misses (esp. Safari). */
+  select,
+  textarea {
+    color-scheme: dark;
+  }
+
+  select option {
+    background-color: var(--card);
+    color: var(--foreground);
+  }
+}

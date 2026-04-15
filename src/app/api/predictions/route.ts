@@ -22,6 +22,7 @@ function parseBody(body: unknown): {
   if (
     asset !== "oil" &&
     asset !== "gold" &&
+    asset !== "silver" &&
     asset !== "stocks" &&
     asset !== "crypto"
   ) {
@@ -43,16 +44,21 @@ function parseBody(body: unknown): {
 }
 
 export async function GET() {
-  const database = getDb();
-  const rows = database
-    .prepare(
-      `SELECT id, created_at, asset, direction, horizon_hours, note,
+  try {
+    const database = getDb();
+    const rows = database
+      .prepare(
+        `SELECT id, created_at, asset, direction, horizon_hours, note,
  entry_price, due_at, resolved_at, exit_price, pct_change, outcome
        FROM predictions
        ORDER BY datetime(created_at) DESC`,
-    )
-    .all() as PredictionRow[];
-  return NextResponse.json({ predictions: rows });
+      )
+      .all() as PredictionRow[];
+    return NextResponse.json({ predictions: rows });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Database error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Invalid payload. Expected asset (oil|gold|stocks|crypto), direction (up|down), horizon_hours (24|48), optional note.",
+          "Invalid payload. Expected asset (oil|gold|silver|stocks|crypto), direction (up|down), horizon_hours (24|48), optional note.",
       },
       { status: 400 },
     );
@@ -90,32 +96,37 @@ export async function POST(request: Request) {
   const created_at = created.toISOString();
   const due_at = due.toISOString();
 
-  const database = getDb();
-  const result = database
-    .prepare(
-      `INSERT INTO predictions (
+  try {
+    const database = getDb();
+    const result = database
+      .prepare(
+        `INSERT INTO predictions (
         created_at, asset, direction, horizon_hours, note,
         entry_price, due_at, outcome
       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    )
-    .run(
-      created_at,
-      parsed.asset,
-      parsed.direction,
-      parsed.horizon_hours,
-      parsed.note,
-      entryPrice,
-      due_at,
-    );
+      )
+      .run(
+        created_at,
+        parsed.asset,
+        parsed.direction,
+        parsed.horizon_hours,
+        parsed.note,
+        entryPrice,
+        due_at,
+      );
 
-  const id = Number(result.lastInsertRowid);
-  const row = database
-    .prepare(
-      `SELECT id, created_at, asset, direction, horizon_hours, note,
+    const id = Number(result.lastInsertRowid);
+    const row = database
+      .prepare(
+        `SELECT id, created_at, asset, direction, horizon_hours, note,
               entry_price, due_at, resolved_at, exit_price, pct_change, outcome
        FROM predictions WHERE id = ?`,
-    )
-    .get(id) as PredictionRow;
+      )
+      .get(id) as PredictionRow;
 
-  return NextResponse.json({ prediction: row }, { status: 201 });
+    return NextResponse.json({ prediction: row }, { status: 201 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Save failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

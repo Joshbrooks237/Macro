@@ -1,16 +1,16 @@
 "use client";
 
+import { fetchJson } from "@/lib/readJsonResponse";
+import type { AssetKey } from "@/types/prediction";
 import { useState } from "react";
 import { LivePrice } from "./LivePrice";
-
-type Asset = "oil" | "gold" | "stocks" | "crypto";
 
 export function PredictionForm({
   onCreated,
 }: {
   onCreated: () => void;
 }) {
-  const [asset, setAsset] = useState<Asset>("stocks");
+  const [asset, setAsset] = useState<AssetKey>("stocks");
   const [direction, setDirection] = useState<"up" | "down">("up");
   const [horizon, setHorizon] = useState<24 | 48>(48);
   const [note, setNote] = useState("");
@@ -24,7 +24,7 @@ export function PredictionForm({
     setMessage(null);
     setError(null);
     try {
-      const res = await fetch("/api/predictions", {
+      await fetchJson<{ prediction: unknown }>("/api/predictions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -34,8 +34,6 @@ export function PredictionForm({
           note: note.trim() || undefined,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Save failed");
       setMessage("Prediction logged with entry price.");
       setNote("");
       onCreated();
@@ -67,10 +65,11 @@ export function PredictionForm({
           <select
             className="mt-1 w-full rounded-lg border border-macro-border bg-black/30 px-3 py-2 text-white outline-none focus:ring-2 focus:ring-macro-accent"
             value={asset}
-            onChange={(e) => setAsset(e.target.value as Asset)}
+            onChange={(e) => setAsset(e.target.value as AssetKey)}
           >
             <option value="stocks">Stocks (SPY)</option>
-            <option value="gold">Gold (GLD)</option>
+            <option value="gold">Gold (COMEX ~spot, $/oz)</option>
+            <option value="silver">Silver (SLV)</option>
             <option value="oil">Oil (USO)</option>
             <option value="crypto">Bitcoin</option>
           </select>

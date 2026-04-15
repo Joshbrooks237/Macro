@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/readJsonResponse";
 import { useCallback, useEffect, useState } from "react";
 
 type Prediction = {
@@ -19,7 +20,8 @@ type Prediction = {
 
 const assetLabels: Record<string, string> = {
   oil: "Oil (USO)",
-  gold: "Gold (GLD)",
+  gold: "Gold ($/oz)",
+  silver: "Silver (SLV)",
   stocks: "SPY",
   crypto: "BTC",
 };
@@ -42,18 +44,23 @@ function outcomeBadge(outcome: string) {
 export function PredictionList({ refreshKey }: { refreshKey: number }) {
   const [rows, setRows] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [resolving, setResolving] = useState(false);
   const [resolveMsg, setResolveMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
-      const res = await fetch("/api/predictions");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Load failed");
+      const json = await fetchJson<{ predictions: Prediction[] }>(
+        "/api/predictions",
+      );
       setRows(json.predictions ?? []);
-    } catch {
+    } catch (e) {
       setRows([]);
+      setLoadError(
+        e instanceof Error ? e.message : "Could not load predictions",
+      );
     } finally {
       setLoading(false);
     }
@@ -67,9 +74,10 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
     setResolving(true);
     setResolveMsg(null);
     try {
-      const res = await fetch("/api/predictions/resolve", { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Resolve failed");
+      const json = await fetchJson<{
+        resolved_count?: number;
+        errors?: { id?: number; message?: string }[];
+      }>("/api/predictions/resolve", { method: "POST" });
       const n = json.resolved_count ?? 0;
       const errs = Array.isArray(json.errors) ? json.errors : [];
       let msg =
@@ -102,6 +110,19 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
 
   return (
     <div className="space-y-4">
+      {loadError ? (
+        <div className="rounded-xl border border-amber-900/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-100">
+          <p className="font-medium text-amber-50">Couldn’t load your log</p>
+          <p className="mt-1 text-amber-100/90">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="mt-3 rounded-lg border border-amber-800/60 bg-black/20 px-3 py-1.5 text-xs font-medium text-amber-50 hover:bg-black/40"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold text-white">Your log</h2>
         <button

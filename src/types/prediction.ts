@@ -1,4 +1,9 @@
-export type AssetKey = "oil" | "gold" | "stocks" | "crypto";
+export type AssetKey =
+  | "oil"
+  | "gold"
+  | "silver"
+  | "stocks"
+  | "crypto";
 export type Direction = "up" | "down";
 export type Outcome = "pending" | "correct" | "incorrect" | "neutral";
 

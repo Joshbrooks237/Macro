@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchJson } from "@/lib/readJsonResponse";
 import { useEffect, useState } from "react";
 
 type Stats = {
@@ -19,8 +20,7 @@ export function StatsBar() {
 
   const load = () => {
     setErr(null);
-    fetch("/api/stats")
-      .then((res) => res.json())
+    fetchJson<Stats>("/api/stats")
       .then((data) => {
         if (typeof data.total !== "number") throw new Error("Bad stats response");
         setStats(data);

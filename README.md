@@ -2,13 +2,13 @@
 
 **Learn to get rich and shit** *(results may vary; wealth not included in repo)*
 
-This is the **Macro Prediction Learning Bot** — a full-stack guilt trip for your hot takes. You log a directional view on oil, gold, stocks, or Bitcoin. The app writes down the price like a disappointed accountant, waits 24–48 hours, then tells you whether reality agreed with you or whether you were just vibing.
+This is the **Macro Prediction Learning Bot** — a full-stack guilt trip for your hot takes. You log a directional view on oil, gold, silver, stocks, or Bitcoin. The app writes down the price like a disappointed accountant, waits 24–48 hours, then tells you whether reality agreed with you or whether you were just vibing.
 
 It is **not** a trading bot. It will not YOLO your rent money. It **will** keep a scoreboard so your future self can cringe with data.
 
 ## Features that slap (educationally)
 
-- **Real prices** — CoinGecko for Bitcoin; Finnhub for SPY / GLD / USO (you bring the API key; we bring the spreadsheet energy).
+- **Real prices** — CoinGecko for Bitcoin; Yahoo **GC=F** for gold (≈ spot **$/troy oz**); Finnhub for SPY / SLV / USO (you bring the API key; we bring the spreadsheet energy).
 - **Neutral zone** — Moves smaller than your threshold (default 0.5%) count as “meh,” not a W or an L. Tiny wiggles don’t get to hurt your feelings.
 - **SQLite** — Your predictions live in a file, not in the cloud next to someone’s NFT collection.
 

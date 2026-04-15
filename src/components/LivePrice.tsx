@@ -1,18 +1,18 @@
 "use client";
 
+import { fetchJson } from "@/lib/readJsonResponse";
+import type { AssetKey } from "@/types/prediction";
 import { useEffect, useState } from "react";
 
-type Asset = "oil" | "gold" | "stocks" | "crypto";
-
 type PricePayload = {
-  asset: Asset;
+  asset: AssetKey;
   label: string;
   price: number;
   previous_close: number | null;
   session_pct_vs_prev_close: number | null;
 };
 
-export function LivePrice({ asset }: { asset: Asset }) {
+export function LivePrice({ asset }: { asset: AssetKey }) {
   const [data, setData] = useState<PricePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +23,9 @@ export function LivePrice({ asset }: { asset: Asset }) {
     setError(null);
     (async () => {
       try {
-        const res = await fetch(`/api/price?asset=${encodeURIComponent(asset)}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Price error");
+        const json = await fetchJson<PricePayload>(
+          `/api/price?asset=${encodeURIComponent(asset)}`,
+        );
         if (!cancelled) setData(json);
       } catch (e) {
         if (!cancelled)
