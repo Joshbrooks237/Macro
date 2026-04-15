@@ -1,6 +1,7 @@
 "use client";
 
 import { assetCardClasses } from "@/lib/assetTheme";
+import { formatAssetPrice } from "@/lib/prices";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
 import { useEffect, useState } from "react";
@@ -52,12 +53,6 @@ export function LivePrice({ asset }: { asset: AssetKey }) {
 
   const theme = assetCardClasses[data.asset];
 
-  const fmt = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  });
-
   const session =
     data.session_pct_vs_prev_close != null
       ? `${data.session_pct_vs_prev_close >= 0 ? "+" : ""}${data.session_pct_vs_prev_close.toFixed(2)}% vs prev close`
@@ -72,7 +67,9 @@ export function LivePrice({ asset }: { asset: AssetKey }) {
       <div className="min-w-0 flex-1 px-3 py-2 text-sm">
         <span className="font-medium text-slate-200">{data.label}</span>
         <span className="mx-2 text-macro-muted">·</span>
-        <span className="tabular-nums text-white">{fmt.format(data.price)}</span>
+        <span className="tabular-nums text-white">
+          {formatAssetPrice(data.asset, data.price)}
+        </span>
         {session ? (
           <span className="ml-2 text-xs text-macro-muted">({session})</span>
         ) : null}

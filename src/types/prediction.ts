@@ -1,9 +1,26 @@
-export type AssetKey =
-  | "oil"
-  | "gold"
-  | "silver"
-  | "stocks"
-  | "crypto";
+export const ASSET_KEYS = [
+  "oil",
+  "wti",
+  "brent",
+  "gold",
+  "silver",
+  "stocks",
+  "crypto",
+  "dxy",
+  "treasury_10y",
+  "vix",
+  "natgas",
+  "copper",
+  "mos",
+  "ntr",
+  "cf",
+] as const;
+
+export type AssetKey = (typeof ASSET_KEYS)[number];
+
+export function isAssetKey(v: string): v is AssetKey {
+  return (ASSET_KEYS as readonly string[]).includes(v);
+}
 export type Direction = "up" | "down";
 export type Outcome = "pending" | "correct" | "incorrect" | "neutral";
 

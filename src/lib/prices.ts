@@ -6,10 +6,24 @@ const COINGECKO_BTC =
 /** In-memory BTC quote to stay under CoinGecko public rate limits (ticker + tabs + dev). */
 let cryptoCache: { price: number; fetchedAt: number } | null = null;
 
-/** Gold uses Yahoo GC=F ($/oz); short cache to limit unofficial API calls. */
-let goldCache: { result: PriceResult; fetchedAt: number } | null = null;
+const YAHOO_SPOT_SYMBOL = {
+  gold: "GC=F",
+  wti: "CL=F",
+  brent: "BZ=F",
+  dxy: "DX-Y.NYB",
+  treasury_10y: "^TNX",
+  vix: "^VIX",
+  natgas: "NG=F",
+  copper: "HG=F",
+} as const satisfies Record<string, string>;
 
-function goldCacheTtlMs(): number {
+type YahooSpotAsset = keyof typeof YAHOO_SPOT_SYMBOL;
+
+const yahooSpotCache: Partial<
+  Record<YahooSpotAsset, { result: PriceResult; fetchedAt: number }>
+> = {};
+
+function yahooSpotCacheTtlMs(): number {
   const sec = Number.parseInt(process.env.GOLD_YAHOO_CACHE_TTL_SEC ?? "45", 10);
   return Number.isFinite(sec) && sec >= 15 ? sec * 1000 : 45_000;
 }
@@ -20,6 +34,10 @@ function cryptoCacheTtlMs(): number {
     10,
   );
   return Number.isFinite(sec) && sec >= 20 ? sec * 1000 : 90_000;
+}
+
+function isYahooSpotAsset(asset: AssetKey): asset is YahooSpotAsset {
+  return Object.prototype.hasOwnProperty.call(YAHOO_SPOT_SYMBOL, asset);
 }
 
 async function fetchBitcoinUsdFromCoingecko(
@@ -61,15 +79,12 @@ type YahooQuoteMeta = {
   previousClose?: number;
 };
 
-/**
- * COMEX gold front-month futures (GC=F) — USD per troy ounce, matches typical “gold price” headlines.
- * Not the GLD ETF share price.
- */
-async function fetchGoldSpotFromYahoo(
+async function fetchYahooSpotFromChart(
+  symbol: string,
+  labelForErrors: string,
   fetchInit: RequestInit,
 ): Promise<PriceResult> {
-  const url =
-    "https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=5d";
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
   const res = await fetch(url, {
     ...fetchInit,
     headers: {
@@ -80,7 +95,9 @@ async function fetchGoldSpotFromYahoo(
     },
   });
   if (!res.ok) {
-    throw new Error(`Yahoo gold (GC=F) error: ${res.status} ${res.statusText}`);
+    throw new Error(
+      `Yahoo (${labelForErrors}) error: ${res.status} ${res.statusText}`,
+    );
   }
   const json = (await res.json()) as {
     chart?: { result?: Array<{ meta?: YahooQuoteMeta }> };
@@ -88,7 +105,7 @@ async function fetchGoldSpotFromYahoo(
   const meta = json.chart?.result?.[0]?.meta;
   const price = meta?.regularMarketPrice;
   if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) {
-    throw new Error("Yahoo returned no valid gold futures price (GC=F)");
+    throw new Error(`Yahoo returned no valid price (${labelForErrors})`);
   }
   const pc = meta?.chartPreviousClose ?? meta?.previousClose;
   return {
@@ -98,11 +115,20 @@ async function fetchGoldSpotFromYahoo(
   };
 }
 
-const SYMBOL_MAP: Record<Exclude<AssetKey, "crypto" | "gold">, string> = {
+const FINNHUB_SYMBOL = {
   oil: "USO",
   silver: "SLV",
   stocks: "SPY",
-};
+  mos: "MOS",
+  ntr: "NTR",
+  cf: "CF",
+} as const;
+
+type FinnhubQuoteAsset = keyof typeof FINNHUB_SYMBOL;
+
+function isFinnhubQuoteAsset(asset: AssetKey): asset is FinnhubQuoteAsset {
+  return Object.prototype.hasOwnProperty.call(FINNHUB_SYMBOL, asset);
+}
 
 /** Display order for tickers and batch quotes */
 export const TRACKED_ASSETS: AssetKey[] = [
@@ -110,7 +136,17 @@ export const TRACKED_ASSETS: AssetKey[] = [
   "gold",
   "silver",
   "oil",
+  "wti",
+  "brent",
   "crypto",
+  "dxy",
+  "treasury_10y",
+  "vix",
+  "natgas",
+  "copper",
+  "mos",
+  "ntr",
+  "cf",
 ];
 
 type FinnhubQuote = {
@@ -133,7 +169,7 @@ function getFinnhubToken(): string {
 
 /**
  * Fetches current price (and previous close when from Finnhub).
- * Crypto uses CoinGecko; ETFs/commodity proxies use Finnhub quote.
+ * Crypto uses CoinGecko; indices/commodities use Yahoo chart; ETFs/stocks use Finnhub quote.
  * @param options.noCache — use for live tickers (bypasses Next fetch cache)
  */
 export async function getPrice(
@@ -163,25 +199,35 @@ export async function getPrice(
     }
   }
 
-  if (asset === "gold") {
-    const ttl = goldCacheTtlMs();
+  if (isYahooSpotAsset(asset)) {
+    const ttl = yahooSpotCacheTtlMs();
     const now = Date.now();
-    if (goldCache && now - goldCache.fetchedAt < ttl) {
-      return goldCache.result;
+    const hit = yahooSpotCache[asset];
+    if (hit && now - hit.fetchedAt < ttl) {
+      return hit.result;
     }
+    const symbol = YAHOO_SPOT_SYMBOL[asset];
     try {
-      const result = await fetchGoldSpotFromYahoo(fetchInit);
-      goldCache = { result, fetchedAt: Date.now() };
+      const result = await fetchYahooSpotFromChart(
+        symbol,
+        symbol,
+        fetchInit,
+      );
+      yahooSpotCache[asset] = { result, fetchedAt: Date.now() };
       return result;
     } catch (e) {
-      if (goldCache) {
-        return goldCache.result;
+      if (hit) {
+        return hit.result;
       }
       throw e;
     }
   }
 
-  const symbol = SYMBOL_MAP[asset];
+  if (!isFinnhubQuoteAsset(asset)) {
+    throw new Error(`No price feed configured for asset: ${asset}`);
+  }
+
+  const symbol = FINNHUB_SYMBOL[asset];
   const token = getFinnhubToken();
   const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${encodeURIComponent(token)}`;
   const res = await fetch(url, fetchInit);
@@ -198,7 +244,7 @@ export async function getPrice(
   };
 }
 
-/** Intraday % vs previous close from Finnhub fields (informational only). */
+/** Intraday % vs previous close from Finnhub / Yahoo meta (informational only). */
 export function finnhubSessionPctChange(quote: PriceResult): number | null {
   if (
     quote.previousClose == null ||
@@ -210,15 +256,71 @@ export function finnhubSessionPctChange(quote: PriceResult): number | null {
   return ((quote.price - quote.previousClose) / quote.previousClose) * 100;
 }
 
+/** Short label for ticker cards (full detail in tooltip / charts). */
+export function assetTickerLabel(asset: AssetKey): string {
+  const labels: Record<AssetKey, string> = {
+    oil: "USO",
+    wti: "WTI",
+    brent: "Brent",
+    gold: "Gold",
+    silver: "SLV",
+    stocks: "SPY",
+    crypto: "Bitcoin",
+    dxy: "DXY",
+    treasury_10y: "10Y yield",
+    vix: "VIX",
+    natgas: "Nat gas",
+    copper: "Copper",
+    mos: "MOS",
+    ntr: "NTR",
+    cf: "CF",
+  };
+  return labels[asset];
+}
+
 export function assetLabel(asset: AssetKey): string {
   const labels: Record<AssetKey, string> = {
     oil: "Oil (USO)",
+    wti: "WTI crude (CL=F, $/bbl)",
+    brent: "Brent crude (BZ=F, $/bbl)",
     gold: "Gold (GC=F, $/oz)",
     silver: "Silver (SLV)",
     stocks: "Stocks (SPY)",
     crypto: "Bitcoin",
+    dxy: "DXY (ICE USD index)",
+    treasury_10y: "10Y Treasury yield (^TNX)",
+    vix: "VIX",
+    natgas: "Natural gas (NG=F)",
+    copper: "Copper (HG=F, $/lb)",
+    mos: "Mosaic (MOS)",
+    ntr: "Nutrien (NTR)",
+    cf: "CF Industries (CF)",
   };
   return labels[asset];
+}
+
+/** Ticker / chart display — not always USD. */
+export function formatAssetPrice(asset: AssetKey, price: number): string {
+  if (asset === "treasury_10y") {
+    return `${price.toFixed(2)}%`;
+  }
+  if (asset === "vix" || asset === "dxy") {
+    return price.toFixed(2);
+  }
+  if (asset === "natgas" || asset === "copper") {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    }).format(price);
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(price);
 }
 
 /** Parallel quotes for all tracked markets (partial success if one leg fails). */

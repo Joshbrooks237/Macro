@@ -1,6 +1,7 @@
 "use client";
 
 import { assetCardClasses, assetChartColors } from "@/lib/assetTheme";
+import { formatAssetPrice } from "@/lib/prices";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -30,14 +31,6 @@ type HistoryPayload = {
   points: { t: number; price: number; label: string }[];
   source: string;
 };
-
-function formatUsd(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: n >= 1000 ? 0 : 2,
-  }).format(n);
-}
 
 export function MarketChartModal({
   asset,
@@ -246,7 +239,10 @@ export function MarketChartModal({
                       borderRadius: "8px",
                     }}
                     labelStyle={{ color: "#8b95a8" }}
-                    formatter={(value: number) => [formatUsd(value), "Close"]}
+                    formatter={(value: number) => [
+                      formatAssetPrice(asset, value),
+                      asset === "treasury_10y" ? "Yield" : "Close",
+                    ]}
                   />
                   <Area
                     type="monotone"

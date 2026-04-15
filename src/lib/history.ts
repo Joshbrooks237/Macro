@@ -1,17 +1,39 @@
 import type { AssetKey } from "@/types/prediction";
 import { assetLabel } from "@/lib/prices";
 
-const ETF_SYMBOL: Record<Exclude<AssetKey, "crypto">, string> = {
+/** Symbols for Finnhub /stock/candle (when plan allows). */
+const FINNHUB_CANDLE_SYMBOL = {
   oil: "USO",
-  gold: "GLD",
   silver: "SLV",
   stocks: "SPY",
+  mos: "MOS",
+  ntr: "NTR",
+  cf: "CF",
+} as const;
+
+type FinnhubCandleAsset = keyof typeof FINNHUB_CANDLE_SYMBOL;
+
+const YAHOO_CHART_SYMBOL: Partial<Record<AssetKey, string>> = {
+  gold: "GC=F",
+  wti: "CL=F",
+  brent: "BZ=F",
+  dxy: "DX-Y.NYB",
+  treasury_10y: "^TNX",
+  vix: "^VIX",
+  natgas: "NG=F",
+  copper: "HG=F",
 };
 
-/** Yahoo chart symbol: gold uses COMEX futures (≈ spot $/oz), not GLD. */
+function isFinnhubCandleAsset(
+  asset: Exclude<AssetKey, "crypto">,
+): asset is FinnhubCandleAsset {
+  return Object.prototype.hasOwnProperty.call(FINNHUB_CANDLE_SYMBOL, asset);
+}
+
 function yahooHistorySymbol(asset: Exclude<AssetKey, "crypto">): string {
-  if (asset === "gold") return "GC=F";
-  return ETF_SYMBOL[asset];
+  const y = YAHOO_CHART_SYMBOL[asset];
+  if (y) return y;
+  return FINNHUB_CANDLE_SYMBOL[asset as FinnhubCandleAsset];
 }
 
 export type HistoryPoint = {
@@ -56,10 +78,9 @@ async function tryFinnhubDaily(
 ): Promise<HistoryResponse | null> {
   const token = process.env.FINNHUB_API_KEY?.trim();
   if (!token) return null;
-  /** Gold is priced from Yahoo GC=F ($/oz); Finnhub GLD candles are a different instrument. */
-  if (asset === "gold") return null;
+  if (!isFinnhubCandleAsset(asset)) return null;
 
-  const symbol = ETF_SYMBOL[asset];
+  const symbol = FINNHUB_CANDLE_SYMBOL[asset];
   const to = Math.floor(Date.now() / 1000);
   const from = to - (days + 5) * 24 * 60 * 60;
 

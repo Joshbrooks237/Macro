@@ -1,26 +1,20 @@
 import { NextResponse } from "next/server";
 import { assetLabel, finnhubSessionPctChange, getPrice } from "@/lib/prices";
-import type { AssetKey } from "@/types/prediction";
+import { isAssetKey } from "@/types/prediction";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const asset = searchParams.get("asset") as AssetKey | null;
-  if (
-    !asset ||
-    (asset !== "oil" &&
-      asset !== "gold" &&
-      asset !== "silver" &&
-      asset !== "stocks" &&
-      asset !== "crypto")
-  ) {
+  const raw = searchParams.get("asset");
+  if (!raw || !isAssetKey(raw)) {
     return NextResponse.json(
-      { error: "Query ?asset= oil|gold|silver|stocks|crypto required" },
+      { error: "Query ?asset= must be a supported market key" },
       { status: 400 },
     );
   }
+  const asset = raw;
 
   try {
     const quote = await getPrice(asset);

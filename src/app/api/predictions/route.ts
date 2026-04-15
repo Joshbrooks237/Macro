@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getPrice } from "@/lib/prices";
-import type { AssetKey, Direction, PredictionRow } from "@/types/prediction";
+import {
+  type AssetKey,
+  type Direction,
+  isAssetKey,
+  type PredictionRow,
+} from "@/types/prediction";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,13 +24,7 @@ function parseBody(body: unknown): {
   const horizon = o.horizon_hours ?? o.horizonHours;
   const note = o.note;
 
-  if (
-    asset !== "oil" &&
-    asset !== "gold" &&
-    asset !== "silver" &&
-    asset !== "stocks" &&
-    asset !== "crypto"
-  ) {
+  if (typeof asset !== "string" || !isAssetKey(asset)) {
     return null;
   }
   if (direction !== "up" && direction !== "down") return null;
@@ -74,7 +73,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Invalid payload. Expected asset (oil|gold|silver|stocks|crypto), direction (up|down), horizon_hours (24|48), optional note.",
+          "Invalid payload. Expected a supported asset key, direction (up|down), horizon_hours (24|48), optional note.",
       },
       { status: 400 },
     );

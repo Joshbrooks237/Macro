@@ -1,8 +1,9 @@
 "use client";
 
 import { assetCardClasses } from "@/lib/assetTheme";
+import { assetLabel, formatAssetPrice } from "@/lib/prices";
 import { fetchJson } from "@/lib/readJsonResponse";
-import type { AssetKey } from "@/types/prediction";
+import { type AssetKey, isAssetKey } from "@/types/prediction";
 import { useCallback, useEffect, useState } from "react";
 
 type Prediction = {
@@ -18,14 +19,6 @@ type Prediction = {
   exit_price: number | null;
   pct_change: number | null;
   outcome: string;
-};
-
-const assetLabels: Record<string, string> = {
-  oil: "Oil (USO)",
-  gold: "Gold ($/oz)",
-  silver: "Silver (SLV)",
-  stocks: "SPY",
-  crypto: "BTC",
 };
 
 function listAccentBar(asset: string) {
@@ -164,7 +157,7 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
               <div className="min-w-0 flex-1 p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium text-white">
-                    {assetLabels[p.asset] ?? p.asset}
+                    {isAssetKey(p.asset) ? assetLabel(p.asset) : p.asset}
                   </span>
                   <span className="text-macro-muted">·</span>
                   <span className="text-slate-200">
@@ -180,7 +173,9 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
                   <span>
                     Entry:{" "}
                     <span className="tabular-nums text-slate-200">
-                      {p.entry_price.toFixed(2)}
+                      {isAssetKey(p.asset)
+                        ? formatAssetPrice(p.asset, p.entry_price)
+                        : p.entry_price.toFixed(2)}
                     </span>{" "}
                     · Due:{" "}
                     <span className="text-slate-200">
@@ -191,7 +186,11 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
                     <span>
                       Exit:{" "}
                       <span className="tabular-nums text-slate-200">
-                        {p.exit_price?.toFixed(2) ?? "—"}
+                        {p.exit_price == null
+                          ? "—"
+                          : isAssetKey(p.asset)
+                            ? formatAssetPrice(p.asset, p.exit_price)
+                            : p.exit_price.toFixed(2)}
                       </span>{" "}
                       · Δ:{" "}
                       <span className="tabular-nums text-slate-200">

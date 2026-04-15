@@ -1,9 +1,17 @@
 "use client";
 
+import { assetLabel } from "@/lib/prices";
 import { fetchJson } from "@/lib/readJsonResponse";
-import type { AssetKey } from "@/types/prediction";
+import { type AssetKey } from "@/types/prediction";
 import { useState } from "react";
 import { LivePrice } from "./LivePrice";
+
+const ASSET_SELECT_GROUPS: { title: string; keys: readonly AssetKey[] }[] = [
+  { title: "Core", keys: ["stocks", "gold", "silver", "crypto"] },
+  { title: "Energy", keys: ["oil", "wti", "brent", "natgas"] },
+  { title: "Macro & metals", keys: ["dxy", "treasury_10y", "vix", "copper"] },
+  { title: "Ag & fertilizer", keys: ["mos", "ntr", "cf"] },
+];
 
 export function PredictionForm({
   onCreated,
@@ -67,11 +75,15 @@ export function PredictionForm({
             value={asset}
             onChange={(e) => setAsset(e.target.value as AssetKey)}
           >
-            <option value="stocks">Stocks (SPY)</option>
-            <option value="gold">Gold (COMEX ~spot, $/oz)</option>
-            <option value="silver">Silver (SLV)</option>
-            <option value="oil">Oil (USO)</option>
-            <option value="crypto">Bitcoin</option>
+            {ASSET_SELECT_GROUPS.map((g) => (
+              <optgroup key={g.title} label={g.title}>
+                {g.keys.map((key) => (
+                  <option key={key} value={key}>
+                    {assetLabel(key)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
         </label>
 

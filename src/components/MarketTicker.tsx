@@ -3,21 +3,18 @@
 import { MarketChartModal } from "@/components/MarketChartModal";
 import { MarketCompareModal } from "@/components/MarketCompareModal";
 import { assetCardClasses } from "@/lib/assetTheme";
+import {
+  assetLabel,
+  assetTickerLabel,
+  formatAssetPrice,
+  TRACKED_ASSETS,
+} from "@/lib/prices";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey, QuoteRow } from "@/types/prediction";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** CoinGecko public API is strict; server caches BTC ~90s — poll a bit slower. */
 const POLL_MS = 30_000;
-
-function formatUsd(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
 
 function SessionBadge({ pct }: { pct: number | null }) {
   if (pct == null || !Number.isFinite(pct)) {
@@ -61,14 +58,17 @@ function QuoteCard({
   if (!row.ok) {
     return (
       <div
-        className={`flex min-h-[88px] overflow-hidden rounded-xl bg-macro-surface ring-1 ring-macro-border transition-shadow duration-300 ${borderFlash}`}
+        className={`flex min-h-[76px] overflow-hidden rounded-xl bg-macro-surface ring-1 ring-macro-border transition-shadow duration-300 sm:min-h-[80px] ${borderFlash}`}
       >
         <span
           className="w-1 shrink-0 bg-slate-600"
           aria-hidden
         />
-        <div className="min-w-0 flex-1 p-3">
-          <p className="text-xs font-medium text-slate-300">{row.label}</p>
+        <div className="min-w-0 flex-1 p-2.5 sm:p-3">
+          <p className="text-xs font-medium text-slate-300">
+            {assetTickerLabel(row.asset)}
+          </p>
+          <p className="sr-only">{row.label}</p>
           <p className="mt-1 line-clamp-2 text-[11px] text-amber-200/90">
             {row.error}
           </p>
@@ -80,27 +80,29 @@ function QuoteCard({
   return (
     <button
       type="button"
-      title="Open 7-day chart"
+      title={`${assetLabel(row.asset)} — open 7-day chart`}
       onClick={() => onOpenChart?.(row.asset)}
-      className={`flex w-full overflow-hidden rounded-xl bg-macro-surface text-left ring-1 ring-macro-border transition-[box-shadow,ring-color] duration-300 focus:outline-none ${theme.ringHover} ${theme.focusVisible} ${borderFlash} ${flash ? "shadow-lg" : ""}`}
+      className={`flex w-full min-h-[76px] overflow-hidden rounded-xl bg-macro-surface text-left ring-1 ring-macro-border transition-[box-shadow,ring-color] duration-300 focus:outline-none sm:min-h-[80px] ${theme.ringHover} ${theme.focusVisible} ${borderFlash} ${flash ? "shadow-lg" : ""}`}
     >
       <span
         className={`w-1 shrink-0 self-stretch ${theme.accentBar}`}
         aria-hidden
       />
-      <div className="min-w-0 flex-1 p-3">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-xs font-medium leading-tight text-slate-200">
-            {row.label}
+      <div className="flex min-w-0 flex-1 items-center gap-2 p-2.5 sm:p-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold leading-snug text-slate-200 sm:text-xs">
+            {assetTickerLabel(row.asset)}
           </p>
+          <p className="mt-1 font-mono text-base font-semibold tabular-nums tracking-tight text-white sm:text-lg">
+            {formatAssetPrice(row.asset, row.price)}
+          </p>
+          <p className="mt-0.5 hidden text-[9px] text-slate-500 sm:block">
+            Chart →
+          </p>
+        </div>
+        <div className="shrink-0 self-start pt-0.5">
           <SessionBadge pct={row.sessionPct} />
         </div>
-        <p className="mt-2 font-mono text-lg font-semibold tabular-nums tracking-tight text-white">
-          {formatUsd(row.price)}
-        </p>
-        <p className="mt-1.5 text-[10px] text-slate-500">
-          Tap for last week →
-        </p>
       </div>
     </button>
   );
@@ -212,10 +214,10 @@ export function MarketTicker() {
             onOpenChart={setChartAsset}
           />
         )) ??
-          [1, 2, 3, 4, 5].map((i) => (
+          Array.from({ length: TRACKED_ASSETS.length }, (_, i) => i).map((i) => (
             <div
               key={i}
-              className="h-[88px] animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border"
+              className="h-[76px] animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border sm:h-[80px]"
             />
           ))}
       </div>
@@ -230,10 +232,10 @@ export function MarketTicker() {
             onOpenChart={setChartAsset}
           />
         )) ??
-          [1, 2, 3, 4, 5].map((i) => (
+          Array.from({ length: TRACKED_ASSETS.length }, (_, i) => i).map((i) => (
             <div
               key={i}
-              className="h-[92px] animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border"
+              className="h-[76px] animate-pulse rounded-xl bg-macro-surface ring-1 ring-macro-border sm:h-[80px]"
             />
           ))}
       </div>
@@ -241,7 +243,8 @@ export function MarketTicker() {
       <p className="mt-4 hidden text-[10px] leading-relaxed text-macro-muted lg:block">
         Updates every ~{POLL_MS / 1000}s (BTC may reuse a server cache up to ~90s
         to avoid CoinGecko limits). Session % uses prior close from the same
-        feed (Finnhub for ETFs; Yahoo for gold GC=F; none for Bitcoin).
+        feed (Finnhub for US-listed symbols; Yahoo for indices, futures, and
+        gold; none for Bitcoin).
       </p>
     </div>
   );

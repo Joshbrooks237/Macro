@@ -1,16 +1,17 @@
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
+import { ASSET_KEYS } from "@/types/prediction";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "macro-predictions.db");
 
 let db: Database.Database | null = null;
 
-const ASSET_CHECK =
-  "('oil', 'gold', 'silver', 'stocks', 'crypto')";
+const ASSET_CHECK = `(${ASSET_KEYS.map((k) => `'${k}'`).join(", ")})`;
 
-function ensurePredictionsAllowSilver(instance: Database.Database) {
+/** Recreate table when CHECK constraint is older than current ASSET_KEYS (e.g. new market added). */
+function ensurePredictionsSchema(instance: Database.Database) {
   const row = instance
     .prepare(
       `SELECT sql FROM sqlite_master WHERE type='table' AND name='predictions'`,
@@ -18,7 +19,7 @@ function ensurePredictionsAllowSilver(instance: Database.Database) {
     .get() as { sql: string } | undefined;
 
   if (!row?.sql) return;
-  if (row.sql.includes("'silver'")) return;
+  if (ASSET_KEYS.every((k) => row.sql.includes(`'${k}'`))) return;
 
   instance.exec(`
     BEGIN IMMEDIATE;
@@ -72,7 +73,7 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_predictions_due ON predictions(due_at);
     CREATE INDEX IF NOT EXISTS idx_predictions_outcome ON predictions(outcome);
   `);
-  ensurePredictionsAllowSilver(instance);
+  ensurePredictionsSchema(instance);
   db = instance;
   return instance;
 }

@@ -1,7 +1,11 @@
 "use client";
 
 import { assetChartColors } from "@/lib/assetTheme";
-import { TRACKED_ASSETS, assetLabel } from "@/lib/prices";
+import {
+  TRACKED_ASSETS,
+  assetLabel,
+  assetTickerLabel,
+} from "@/lib/prices";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -324,7 +328,7 @@ export function MarketCompareModal({
               >
                 <LineChart
                   data={chartData}
-                  margin={{ top: 8, right: 8, left: 4, bottom: 8 }}
+                  margin={{ top: 8, right: 8, left: 4, bottom: 2 }}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -372,7 +376,16 @@ export function MarketCompareModal({
                     }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                    verticalAlign="bottom"
+                    wrapperStyle={{
+                      fontSize: "10px",
+                      lineHeight: "14px",
+                      maxHeight: "5.25rem",
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      paddingTop: "6px",
+                      WebkitOverflowScrolling: "touch",
+                    }}
                     formatter={(value) => (
                       <span className="text-slate-300">{value}</span>
                     )}
@@ -383,7 +396,7 @@ export function MarketCompareModal({
                         key={asset}
                         type="monotone"
                         dataKey={asset}
-                        name={assetLabel(asset)}
+                        name={assetTickerLabel(asset)}
                         stroke={assetChartColors[asset].stroke}
                         strokeWidth={2}
                         dot={false}
@@ -415,7 +428,7 @@ export function MarketCompareModal({
         {failed.length > 0 ? (
           <p className="border-t border-macro-border px-4 py-2 text-center text-[10px] text-amber-200/90 sm:px-5">
             Missing:{" "}
-            {failed.map((a) => assetLabel(a)).join(" · ")} — other lines still
+            {failed.map((a) => assetTickerLabel(a)).join(" · ")} — other lines still
             plot if data returned.
           </p>
         ) : (

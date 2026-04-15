@@ -1,37 +1,25 @@
 import { NextResponse } from "next/server";
 import { getHistory } from "@/lib/history";
-import type { AssetKey } from "@/types/prediction";
+import { isAssetKey } from "@/types/prediction";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function parseAsset(v: string | null): AssetKey | null {
-  if (
-    v === "oil" ||
-    v === "gold" ||
-    v === "silver" ||
-    v === "stocks" ||
-    v === "crypto"
-  ) {
-    return v;
-  }
-  return null;
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const asset = parseAsset(searchParams.get("asset"));
+  const raw = searchParams.get("asset");
   const daysRaw = searchParams.get("days");
   const days = daysRaw
     ? Number.parseInt(daysRaw, 10)
     : 7;
 
-  if (!asset) {
+  if (!raw || !isAssetKey(raw)) {
     return NextResponse.json(
-      { error: "Query ?asset= oil|gold|silver|stocks|crypto required" },
+      { error: "Query ?asset= must be a supported market key" },
       { status: 400 },
     );
   }
+  const asset = raw;
 
   try {
     const data = await getHistory(asset, Number.isFinite(days) ? days : 7);
