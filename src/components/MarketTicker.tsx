@@ -1,6 +1,7 @@
 "use client";
 
 import { MarketChartModal } from "@/components/MarketChartModal";
+import { assetCardClasses } from "@/lib/assetTheme";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey, QuoteRow } from "@/types/prediction";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -54,15 +55,23 @@ function QuoteCard({
         ? "ring-rose-500/50"
         : "ring-transparent";
 
+  const theme = assetCardClasses[row.asset];
+
   if (!row.ok) {
     return (
       <div
-        className={`rounded-xl bg-macro-surface p-3 ring-1 ring-macro-border transition-shadow duration-300 ${borderFlash}`}
+        className={`flex min-h-[88px] overflow-hidden rounded-xl bg-macro-surface ring-1 ring-macro-border transition-shadow duration-300 ${borderFlash}`}
       >
-        <p className="text-xs font-medium text-slate-300">{row.label}</p>
-        <p className="mt-1 line-clamp-2 text-[11px] text-amber-200/90">
-          {row.error}
-        </p>
+        <span
+          className="w-1 shrink-0 bg-slate-600"
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1 p-3">
+          <p className="text-xs font-medium text-slate-300">{row.label}</p>
+          <p className="mt-1 line-clamp-2 text-[11px] text-amber-200/90">
+            {row.error}
+          </p>
+        </div>
       </div>
     );
   }
@@ -72,18 +81,26 @@ function QuoteCard({
       type="button"
       title="Open 7-day chart"
       onClick={() => onOpenChart?.(row.asset)}
-      className={`w-full rounded-xl bg-macro-surface p-3 text-left ring-1 ring-macro-border transition-[box-shadow,ring-color] duration-300 hover:ring-macro-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-macro-accent ${borderFlash} ${flash ? "shadow-lg" : ""}`}
+      className={`flex w-full overflow-hidden rounded-xl bg-macro-surface text-left ring-1 ring-macro-border transition-[box-shadow,ring-color] duration-300 focus:outline-none ${theme.ringHover} ${theme.focusVisible} ${borderFlash} ${flash ? "shadow-lg" : ""}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium leading-tight text-slate-300">
-          {row.label}
+      <span
+        className={`w-1 shrink-0 self-stretch ${theme.accentBar}`}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1 p-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs font-medium leading-tight text-slate-200">
+            {row.label}
+          </p>
+          <SessionBadge pct={row.sessionPct} />
+        </div>
+        <p className="mt-2 font-mono text-lg font-semibold tabular-nums tracking-tight text-white">
+          {formatUsd(row.price)}
         </p>
-        <SessionBadge pct={row.sessionPct} />
+        <p className="mt-1.5 text-[10px] text-slate-500">
+          Tap for last week →
+        </p>
       </div>
-      <p className="mt-2 font-mono text-lg font-semibold tabular-nums tracking-tight text-white">
-        {formatUsd(row.price)}
-      </p>
-      <p className="mt-1.5 text-[10px] text-slate-500">Tap for last week →</p>
     </button>
   );
 }
@@ -144,7 +161,7 @@ export function MarketTicker() {
     : "—";
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       <MarketChartModal
         asset={chartAsset}
         onClose={() => setChartAsset(null)}

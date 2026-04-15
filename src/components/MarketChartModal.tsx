@@ -1,5 +1,6 @@
 "use client";
 
+import { assetCardClasses, assetChartColors } from "@/lib/assetTheme";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
@@ -102,6 +103,9 @@ export function MarketChartModal({
 
   if (!asset || !mounted) return null;
 
+  const modalTheme = assetCardClasses[asset];
+  const chartColors = assetChartColors[asset];
+
   const chartData =
     data?.points.map((p) => ({
       name: p.label,
@@ -118,7 +122,7 @@ export function MarketChartModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="chart-title"
-        className="relative flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-macro-border bg-macro-surface shadow-2xl ring-1 ring-white/10"
+        className={`relative flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-macro-border bg-macro-surface shadow-2xl ring-1 ring-white/10 ${modalTheme.modalTopAccent}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-macro-border px-4 py-3 sm:px-5">
@@ -174,12 +178,12 @@ export function MarketChartModal({
                     >
                       <stop
                         offset="0%"
-                        stopColor="#3b82f6"
+                        stopColor={chartColors.stroke}
                         stopOpacity={0.45}
                       />
                       <stop
                         offset="100%"
-                        stopColor="#3b82f6"
+                        stopColor={chartColors.stroke}
                         stopOpacity={0}
                       />
                     </linearGradient>
@@ -218,11 +222,11 @@ export function MarketChartModal({
                   <Area
                     type="monotone"
                     dataKey="price"
-                    stroke="#60a5fa"
+                    stroke={chartColors.stroke}
                     strokeWidth={2}
                     fill={`url(#${gradientId})`}
                     dot={false}
-                    activeDot={{ r: 4, fill: "#93c5fd" }}
+                    activeDot={{ r: 4, fill: chartColors.activeDot }}
                   />
                 </AreaChart>
               </ResponsiveContainer>

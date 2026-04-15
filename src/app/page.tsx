@@ -11,7 +11,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <main className="relative z-0 min-w-0 flex-1">
+      <main className="relative z-0 order-2 min-h-0 min-w-0 flex-1 lg:order-1">
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
           <header className="mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
@@ -56,7 +56,7 @@ export default function Home() {
         </div>
       </main>
 
-      <aside className="relative z-10 shrink-0 border-t border-macro-border bg-macro-surface/70 px-4 py-4 backdrop-blur-md lg:sticky lg:top-0 lg:max-h-screen lg:w-80 lg:overflow-y-auto lg:border-l lg:border-t-0 lg:px-5 lg:py-8 xl:w-[22rem]">
+      <aside className="relative z-10 order-1 shrink-0 border-b border-macro-border bg-macro-surface/80 px-4 py-4 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-[0_8px_30px_-8px_rgba(0,0,0,0.45)] backdrop-blur-md lg:order-2 lg:sticky lg:top-0 lg:max-h-screen lg:w-80 lg:overflow-y-auto lg:border-b-0 lg:border-l lg:border-t-0 lg:px-5 lg:py-8 lg:pt-8 lg:pb-8 lg:shadow-none xl:w-[22rem]">
         <MarketTicker />
       </aside>
     </div>

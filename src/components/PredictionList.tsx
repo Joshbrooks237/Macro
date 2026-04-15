@@ -1,6 +1,8 @@
 "use client";
 
+import { assetCardClasses } from "@/lib/assetTheme";
 import { fetchJson } from "@/lib/readJsonResponse";
+import type { AssetKey } from "@/types/prediction";
 import { useCallback, useEffect, useState } from "react";
 
 type Prediction = {
@@ -25,6 +27,12 @@ const assetLabels: Record<string, string> = {
   stocks: "SPY",
   crypto: "BTC",
 };
+
+function listAccentBar(asset: string) {
+  if (asset in assetCardClasses)
+    return assetCardClasses[asset as AssetKey].accentBar;
+  return "bg-slate-600";
+}
 
 function outcomeBadge(outcome: string) {
   const base =
@@ -147,55 +155,61 @@ export function PredictionList({ refreshKey }: { refreshKey: number }) {
           {rows.map((p) => (
             <li
               key={p.id}
-              className="rounded-xl bg-macro-surface p-4 ring-1 ring-macro-border"
+              className="flex overflow-hidden rounded-xl bg-macro-surface ring-1 ring-macro-border"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-white">
-                  {assetLabels[p.asset] ?? p.asset}
-                </span>
-                <span className="text-macro-muted">·</span>
-                <span className="text-slate-200">
-                  {p.direction === "up" ? "↑ Up" : "↓ Down"}
-                </span>
-                <span className="text-macro-muted">·</span>
-                <span className="text-sm text-macro-muted">
-                  {p.horizon_hours}h
-                </span>
-                <span className={outcomeBadge(p.outcome)}>{p.outcome}</span>
-              </div>
-              <div className="mt-2 grid gap-1 text-sm text-macro-muted sm:grid-cols-2">
-                <span>
-                  Entry:{" "}
-                  <span className="tabular-nums text-slate-200">
-                    {p.entry_price.toFixed(2)}
-                  </span>{" "}
-                  · Due:{" "}
-                  <span className="text-slate-200">
-                    {new Date(p.due_at).toLocaleString()}
+              <span
+                className={`w-1 shrink-0 self-stretch ${listAccentBar(p.asset)}`}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-white">
+                    {assetLabels[p.asset] ?? p.asset}
                   </span>
-                </span>
-                {p.resolved_at ? (
+                  <span className="text-macro-muted">·</span>
+                  <span className="text-slate-200">
+                    {p.direction === "up" ? "↑ Up" : "↓ Down"}
+                  </span>
+                  <span className="text-macro-muted">·</span>
+                  <span className="text-sm text-macro-muted">
+                    {p.horizon_hours}h
+                  </span>
+                  <span className={outcomeBadge(p.outcome)}>{p.outcome}</span>
+                </div>
+                <div className="mt-2 grid gap-1 text-sm text-macro-muted sm:grid-cols-2">
                   <span>
-                    Exit:{" "}
+                    Entry:{" "}
                     <span className="tabular-nums text-slate-200">
-                      {p.exit_price?.toFixed(2) ?? "—"}
+                      {p.entry_price.toFixed(2)}
                     </span>{" "}
-                    · Δ:{" "}
-                    <span className="tabular-nums text-slate-200">
-                      {p.pct_change != null
-                        ? `${p.pct_change >= 0 ? "+" : ""}${p.pct_change.toFixed(2)}%`
-                        : "—"}
+                    · Due:{" "}
+                    <span className="text-slate-200">
+                      {new Date(p.due_at).toLocaleString()}
                     </span>
                   </span>
-                ) : (
-                  <span>Pending resolution after due time.</span>
-                )}
+                  {p.resolved_at ? (
+                    <span>
+                      Exit:{" "}
+                      <span className="tabular-nums text-slate-200">
+                        {p.exit_price?.toFixed(2) ?? "—"}
+                      </span>{" "}
+                      · Δ:{" "}
+                      <span className="tabular-nums text-slate-200">
+                        {p.pct_change != null
+                          ? `${p.pct_change >= 0 ? "+" : ""}${p.pct_change.toFixed(2)}%`
+                          : "—"}
+                      </span>
+                    </span>
+                  ) : (
+                    <span>Pending resolution after due time.</span>
+                  )}
+                </div>
+                {p.note ? (
+                  <p className="mt-2 border-t border-macro-border pt-2 text-sm text-slate-300">
+                    {p.note}
+                  </p>
+                ) : null}
               </div>
-              {p.note ? (
-                <p className="mt-2 border-t border-macro-border pt-2 text-sm text-slate-300">
-                  {p.note}
-                </p>
-              ) : null}
             </li>
           ))}
         </ul>

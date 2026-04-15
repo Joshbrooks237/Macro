@@ -1,5 +1,6 @@
 "use client";
 
+import { assetCardClasses } from "@/lib/assetTheme";
 import { fetchJson } from "@/lib/readJsonResponse";
 import type { AssetKey } from "@/types/prediction";
 import { useEffect, useState } from "react";
@@ -49,6 +50,8 @@ export function LivePrice({ asset }: { asset: AssetKey }) {
   }
   if (!data) return null;
 
+  const theme = assetCardClasses[data.asset];
+
   const fmt = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -61,13 +64,19 @@ export function LivePrice({ asset }: { asset: AssetKey }) {
       : null;
 
   return (
-    <div className="rounded-lg border border-macro-border bg-black/20 px-3 py-2 text-sm">
-      <span className="font-medium text-white">{data.label}</span>
-      <span className="mx-2 text-macro-muted">·</span>
-      <span className="tabular-nums text-emerald-200">{fmt.format(data.price)}</span>
-      {session ? (
-        <span className="ml-2 text-xs text-macro-muted">({session})</span>
-      ) : null}
+    <div className="flex overflow-hidden rounded-lg border border-macro-border bg-black/20">
+      <span
+        className={`w-1 shrink-0 self-stretch ${theme.accentBar}`}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1 px-3 py-2 text-sm">
+        <span className="font-medium text-slate-200">{data.label}</span>
+        <span className="mx-2 text-macro-muted">·</span>
+        <span className="tabular-nums text-white">{fmt.format(data.price)}</span>
+        {session ? (
+          <span className="ml-2 text-xs text-macro-muted">({session})</span>
+        ) : null}
+      </div>
     </div>
   );
 }
